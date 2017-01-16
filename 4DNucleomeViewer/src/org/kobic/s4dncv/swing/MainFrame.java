@@ -9,14 +9,19 @@ public class MainFrame extends JFrame{
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 6897036433376508918L;
 
 	public MainFrame(String title) {
 		super(title);
 		
-		this.applyUIManager();
+		
+		J4DNucleomeViewerMenuBar menuBar = new J4DNucleomeViewerMenuBar();
+		
+		this.setJMenuBar(menuBar);
+		
+//		this.applyUIManager();
 	}
-	
+
 	private void applyUIManager() {
 		try {
             // Set cross-platform Java L&F (also called "Metal")
