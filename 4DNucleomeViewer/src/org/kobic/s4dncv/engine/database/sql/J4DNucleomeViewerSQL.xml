@@ -1,0 +1,796 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.kobic.genome.project.mapper.ProjectMapper">
+	<resultMap id="HiCInteractionPairCommonVoMap" type="org.kobic.genome.project.vo.HiCInteractionPairCommonVo">
+		<result property="startPt" column="startPt" />
+		<result property="endPt" column="endPt" />
+		<result property="maxFreq" column="maxFreq" />
+		<result property="binSize" column="binSize" />
+		<result property="windowSize" column="windowSize" />
+	</resultMap>
+	
+	<resultMap id="HiCInteractionPairVoMap" type="org.kobic.genome.project.vo.HiCInteractionPairVo">
+		<result property="bin" column="bin" />
+		<result property="interactionPair" column="interactionPair" />
+		<result property="count" column="count" />
+		<result property="colOrder" column="colOrder" />
+		<result property="rowOrder" column="rowOrder" />
+	</resultMap>
+	
+	<resultMap id="HeatMapVoMap" type="org.kobic.genome.project.vo.HeatMapVo">
+		<result property="bin" column="bin" />
+		<result property="interactionPair" column="interactionPair" />
+		<result property="count" column="count" />
+	</resultMap>
+
+	<resultMap id="LocusVoMap" type="org.kobic.genome.project.vo.LocusVo">
+		<result property="chrom" column="chrom" />
+		<result property="txStart" column="txStart" />
+		<result property="txEnd" column="txEnd" />
+	</resultMap>
+
+	<resultMap id="InteractionVoMap" type="org.kobic.genome.project.vo.InteractionVo">
+		<result property="chr" column="chr" />
+		<result property="bin1" column="bin1" />
+		<result property="bin2" column="bin2" />
+		<result property="count" column="count" />
+		<result property="foldChange" column="foldChange" />
+		<result property="bin1_idx" column="bin1_idx" />
+		<result property="bin2_idx" column="bin2_idx" />
+		<!-- <result property="all_capture_res" column="all_capture_res" /> -->
+	</resultMap>
+	
+	<resultMap id="GeneVoMap" type="org.kobic.genome.project.vo.GeneVo">
+		<result property="num" column="num" />
+		<result property="name" column="name" />
+		<result property="nameLength" column="nameLength" />
+		<result property="chrom" column="chrom" />
+		<result property="txStart" column="txStart" />
+		<result property="txEnd" column="txEnd" />
+		<result property="tableNM" column="tableNM" />
+	</resultMap>
+
+	<resultMap id="SampleVoMap" type="org.kobic.genome.project.vo.SampleVo">
+		<result property="num" column="num" />
+		<result property="id" column="num" />
+		<result property="celline_name" column="name" />
+		<result property="table_name" column="nameLength" />
+		<result property="valid_yn" column="valid_yn" />
+	</resultMap>
+	
+	
+
+	<select id="getHicIneractionPairCommonInfo" parameterType="java.util.Map" resultMap="HiCInteractionPairCommonVoMap">
+		SELECT
+			MIN(BIN1)										AS startPt
+			, MAX(BIN1) 									AS endPt
+			, MAX(COUNT)									AS maxFreq
+			, ((MAX(BIN1) - MIN(BIN1)) / ${window_size})	AS binSize
+			, ${window_size}								AS windowSize
+		FROM IJ48_chr22
+		WHERE 
+	</select>
+
+	<select id="getCurrentHicInteractionPairInfo" parameterType="java.util.Map" resultMap="HiCInteractionPairVoMap">
+		SELECT
+			BIN1									AS bin
+			, BIN2 									AS interactionPair
+			, COUNT									AS count
+			, ((BIN1 - ${base})/${window_size})	AS colOrder
+			, ((BIN2 - ${base})/${window_size})	AS rowOrder
+		FROM IJ48_chr22
+		WHERE BIN1=${pos}
+		ORDER BY BIN2
+	</select>
+	
+	<select id="getLocusInfo" parameterType="java.util.Map" resultMap="LocusVoMap">
+		
+		SELECT 
+			chrom, txStart, txEnd
+		FROM (
+			SELECT 
+				chrom, txStart, txEnd
+			FROM (
+				SELECT
+					chrom
+					, txStart
+					, txEnd
+				FROM GENE_Refseq_hg19
+				WHERE name=#{name}
+				
+				UNION ALL
+	
+				SELECT
+					chrom
+					, txStart
+					, txEnd
+				FROM GENE_Refseq_hg19
+				WHERE name2=#{name}
+			) a
+			GROUP BY chrom, txStart, txEnd
+			
+			UNION ALL
+			
+			SELECT
+				chrom, chromStart AS txStart, chromEnd AS txEnd
+			FROM AutocompleteTable
+			<!-- WHERE MATCH(name, wd3, wd4, wd5, wd6, wd7, wd8, wd9, wd10, wd11, wd12, wd13, wd14) -->
+			WHERE MATCH(name)
+			AGAINST( #{name} )
+<!-- 			AND name=#{name} -->
+		) a
+		ORDER BY chrom, txStart
+		
+<!-- 		UNION ALL
+		
+		SELECT 
+			chrom
+			, txStart
+			, txEnd
+		FROM GENE_UCSC_hg19
+		WHERE name=#{name}
+		
+		UNION ALL
+		
+		SELECT 
+			chrom
+			, txStart
+			, txEnd
+		FROM GENE_Ensembl_hg19
+		WHERE name=#{name}
+
+		UNION ALL
+
+		SELECT 
+			chrom
+			, txStart
+			, txEnd
+		FROM GENE_Ensembl_hg19
+		WHERE name2=#{name} -->
+	</select>
+	
+	<select id="getInteractions4Convolution" parameterType="java.util.Map" resultMap="InteractionVoMap">
+		SELECT
+			chr, bin1, bin2, count, foldChange
+			<!-- , all_capture_res -->
+		FROM (
+			SELECT 
+				chr , bin1 , bin2
+			<!-- , RawCount AS count  -->
+			, all_capture_res AS count
+			, dist_foldchange AS foldChange
+			FROM ${tableName} a, ( 
+			<foreach item="item" index="index" collection="list" separator="UNION ALL">
+				SELECT ${item} AS bin
+	  			</foreach> 
+			) b WHERE a.chr=#{chrom}
+			AND a.bin1=b.bin
+	
+			UNION ALL
+	
+			SELECT 
+				chr , bin2 AS bin1, bin1 AS bin2
+			<!-- , RawCount AS count -->
+			, all_capture_res AS count
+			, dist_foldchange AS foldChange
+			FROM ${tableName} a, ( 
+			<foreach item="item" index="index" collection="list" separator="UNION ALL">
+				SELECT ${item} AS bin
+	  			</foreach> 
+			) b WHERE a.chr=#{chrom} 
+			AND a.bin2=b.bin 
+			AND a.bin1 != a.bin2
+		) a
+		WHERE bin2 BETWEEN bin1 - ${boundary} AND bin1 + ${boundary}
+		ORDER BY bin1, bin2
+	</select>
+	
+	<select id="getInteractions" parameterType="java.util.Map" resultMap="InteractionVoMap">
+<!-- 	SELECT
+			chr
+			, bin1
+			, bin2
+			, SUM(count) / POW(${windowSize} / 1000, 2) count
+		FROM (
+			SELECT
+					chr
+					, ${pos} AS bin1
+					, CASE WHEN type=1 THEN
+						${max} + (diff2 * ${windowSize}) - (${max}-${pos})
+				ELSE
+						${min} + (diff2 * ${windowSize})
+				END bin2
+				, count
+			FROM (
+				SELECT
+					chr, bin1, bin2, diff, count
+					, CASE WHEN diff MOD ${windowSize} = 0 THEN
+						diff DIV ${windowSize}
+					ELSE
+						(diff DIV ${windowSize}) + 1
+					END diff2
+					, type
+				FROM (
+					SELECT 
+						chr , bin1 , bin2
+						, (bin2 - ${max}) diff
+					, count 
+					, 1 type
+					FROM Sample a, ( 
+					<foreach item="item" index="index" collection="list" separator="UNION ALL">
+						SELECT ${item} AS bin
+	    			</foreach> 
+					) b WHERE a.chr='chr1' 
+					AND a.bin1=b.bin 
+			
+					UNION ALL
+			
+					SELECT 
+						chr , bin2 as bin1, bin1 as bin2
+						, (bin1 - ${min}) diff
+					, count 
+					, 2 type
+					FROM Sample a, ( 
+					<foreach item="item" index="index" collection="list" separator="UNION ALL">
+						SELECT ${item} AS bin
+	    			</foreach> 
+					) b WHERE a.chr='chr1' 
+					AND a.bin2=b.bin 
+					AND a.bin1 != a.bin2
+				) a
+			) a
+		) a
+		WHERE bin2 BETWEEN bin1 - ${boundary} AND bin1 + ${boundary}
+		GROUP BY chr, bin1, bin2
+		ORDER BY bin2 -->
+
+
+ 	SELECT
+			chr
+			, bin1
+			, bin2
+			, SUM(count) / POW(${windowSize} / 1000, 2) count
+			, SUM(foldChange) / POW(${windowSize} / 1000, 2) foldChange
+		FROM (
+			SELECT
+				chr, bin1, count
+				, all_capture_res
+				, (diff DIV ${windowSize}) * ${windowSize} + #{min} as bin2
+				, foldChange
+			FROM (
+				SELECT 
+					chr , ${pos} AS bin1 , bin2
+					, (bin2 - ${min}) diff
+				, RawCount AS count 
+				, all_capture_res
+				, dist_foldchange AS foldChange
+				FROM ${tableName} a, ( 
+				<foreach item="item" index="index" collection="list" separator="UNION ALL">
+					SELECT ${item} AS bin
+    			</foreach> 
+				) b WHERE a.chr=#{chrom}
+				AND a.bin1=b.bin
+
+				UNION ALL
+
+				SELECT 
+					chr , ${pos} AS bin1, bin1 AS bin2
+					, (bin1 - ${min}) diff
+				, RawCount AS count
+				, all_capture_res
+				, dist_foldchange AS foldChange
+				FROM ${tableName} a, ( 
+				<foreach item="item" index="index" collection="list" separator="UNION ALL">
+					SELECT ${item} AS bin
+    			</foreach> 
+				) b WHERE a.chr=#{chrom} 
+				AND a.bin2=b.bin 
+				AND a.bin1 != a.bin2
+			) a
+		) a
+		WHERE bin2 BETWEEN bin1 - ${boundary} AND bin1 + ${boundary}
+		GROUP BY chr, bin1, bin2
+		ORDER BY bin2
+
+		<!-- SELECT
+			chr
+			, bin1
+			, bin2
+			, SUM(count) / POW(${windowSize} / 1000, 2) count
+		FROM (
+			SELECT 
+				chr
+				, (bin1 DIV ${windowSize}) * ${windowSize} as bin1
+				, (bin2 DIV ${windowSize}) * ${windowSize} as bin2
+				, count
+			FROM Sample a, (
+			<foreach item="item" index="index" collection="list" separator="UNION ALL">
+				SELECT ${item} AS bin
+    		</foreach>
+    		) b
+			WHERE a.chr=#{chrom}
+			AND a.bin1=b.bin
+			
+			UNION ALL
+		
+			SELECT 
+				chr
+				, (bin2 DIV ${windowSize}) * ${windowSize} as bin1
+				, (bin1 DIV ${windowSize}) * ${windowSize} as bin2
+				, count
+			FROM Sample a, (
+			<foreach item="item" index="index" collection="list" separator="UNION ALL">
+				SELECT ${item} AS bin
+    		</foreach>
+    		) b
+			WHERE a.chr=#{chrom}
+			AND a.bin2=b.bin
+			AND a.bin1 != a.bin2
+		) a
+		WHERE bin2 BETWEEN bin1 - ${boundary} AND bin1 + ${boundary}
+		GROUP BY chr, bin1, bin2
+		ORDER BY bin2
+	 -->
+<!-- 	<![CDATA[
+		SELECT
+			chr
+			, bin1
+			, bin2
+			, SUM(count) / POW(${windowSize} / 1000, 2) count
+		FROM (
+			SELECT 
+				chr
+				, (bin1 DIV ${windowSize}) * ${windowSize} as bin1
+				, (bin2 DIV ${windowSize}) * ${windowSize} as bin2
+				, count
+			FROM Sample
+			WHERE chr=#{chrom}
+
+			AND (${pos} DIV ${windowSize}) = (bin1 DIV ${windowSize}) 
+		
+			UNION ALL
+		
+			SELECT 
+				chr
+				, (bin2 DIV ${windowSize}) * ${windowSize} as bin1
+				, (bin1 DIV ${windowSize}) * ${windowSize} as bin2
+				, count
+			FROM Sample
+			WHERE chr=#{chrom}
+			AND (${pos} DIV ${windowSize}) = (bin2 DIV ${windowSize})
+			AND bin1 <> bin2
+		) a
+		WHERE bin2 BETWEEN bin1 - ${boundary} AND bin1 + ${boundary}
+		GROUP BY chr, bin1, bin2
+		ORDER BY bin2
+	]]> -->
+<!-- 
+		SELECT
+			chr
+			, bin1
+			, bin2
+			, count
+		FROM (
+			SELECT
+				chr
+				, bin1
+				, bin2
+				, count
+			FROM Sample
+			WHERE chr=#{chrom} AND ${pos} BETWEEN bin1 AND bin1 + ${windowSize}
+			UNION ALL
+			SELECT
+				chr
+				, bin1 as bin2
+				, bin2 as bin1
+				, count
+				, 'triangular' type
+			FROM Sample
+			WHERE chr=#{chrom} AND ${pos} BETWEEN bin2 AND BIN2 + ${windowSize}
+		) a
+		WHERE bin2 BETWEEN bin1 - ${boundary} AND bin1 + ${boundary}
+		ORDER BY bin2 -->
+	</select>
+	
+<!-- 	<select id="getGene" parameterType="java.util.Map" resultMap="GeneVoMap">
+		SELECT * FROM (
+			SELECT
+				@rownum:=@rownum+1 as num
+				, name2 as name
+				, length(name2) as nameLength
+				, chrom
+				, txStart
+				, txEnd
+				, 'Refseq' as tableNM
+			FROM GENE_Refseq_hg19
+			WHERE txStart <![CDATA[>]]> ${startPt} AND txEnd <![CDATA[<]]> ${endPt}
+			AND chrom=#{chrom}
+			and (@rownum:=0)=0
+			order by txStart, txEnd
+		) a
+		UNION ALL
+		SELECT * FROM (
+			SELECT
+				@rownum:=@rownum+1 as num
+				, name2 as name
+				, length(name2) as nameLength
+				, chrom
+				, txStart
+				, txEnd
+				, 'Ensembl' as tableNM
+			FROM GENE_Ensembl_hg19
+			WHERE txStart <![CDATA[>]]> ${startPt} AND txEnd <![CDATA[<]]> ${endPt}
+			AND chrom=#{chrom}
+			and (@rownum:=0)=0
+			order by txStart, txEnd
+		) b
+		UNION ALL
+		SELECT * FROM (
+			SELECT
+				@rownum:=@rownum+1 as num
+				, name
+				, length(name) as nameLength
+				, chrom
+				, txStart
+				, txEnd
+				, 'UCSC' as tableNM
+			FROM GENE_UCSC_hg19
+			WHERE txStart <![CDATA[>]]> ${startPt} AND txEnd <![CDATA[<]]> ${endPt}
+			AND chrom=#{chrom}
+			and (@rownum:=0)=0
+			order by txStart, txEnd
+		) c
+	</select> -->
+	
+	<select id="getGene" parameterType="java.util.Map" resultMap="GeneVoMap">
+		SELECT
+			@rownum:=@rownum+1 as num
+			, name2 as name
+			, length(name2) as nameLength
+			, chrom
+			, txStart
+			, txEnd
+			, 'Refseq' as tableNM
+		FROM GENE_Refseq_hg19 a, (SELECT @rownum:=0) b
+<!-- 		WHERE txStart <![CDATA[>]]> ${startPt} AND txEnd <![CDATA[<]]> ${endPt} -->
+		WHERE (txStart <![CDATA[>=]]> ${startPt} OR txEnd <![CDATA[>=]]> ${startPt}) AND (txStart <![CDATA[<=]]> ${endPt} OR txEnd <![CDATA[<=]]> ${endPt})
+		AND chrom=#{chrom}
+		and (@rownum:=0)=0
+		order by txStart, txEnd
+	</select>
+	
+	<select id="getHeatMapData" parameterType="java.util.Map" resultMap="HeatMapVoMap">
+		<!--  SELECT 
+			bin1 AS bin,
+			bin2 AS interactionPair,
+			count AS count
+		FROM Sample
+		WHERE chr=#{chrom}
+		AND bin1 BETWEEN ${pos}-${boundary} AND ${pos}+${boundary}
+		AND bin2 BETWEEN ${pos}-${boundary} AND ${pos}+${boundary} -->
+		
+ 		<!-- SELECT
+			chr
+			, bin1	AS bin 
+			, bin2	 AS interactionPair
+			, SUM(count) / POW(${windowSize} / 1000, 2) count
+			,SUM(count) AS count
+		FROM (
+			SELECT
+				 chr
+				 , (bin1 DIV ${windowSize}) * ${windowSize} as bin1
+				 , (bin2 DIV ${windowSize}) * ${windowSize} as bin2
+				 , count
+			FROM Sample
+			WHERE chr=#{chrom}
+			and bin1 BETWEEN ${pos} - ${boundary} AND ${pos} + ${boundary}
+			and bin2 BETWEEN ${pos} - ${boundary} AND ${pos} + ${boundary}
+		) a
+		GROUP BY chr, bin1, bin2 -->
+		SELECT 
+			chr,
+			bin,
+			interactionPair,
+			round(sum(count)/ POW(#{windowSize} / 1000, 2),2) as count
+		FROM(
+		SELECT 
+			chr,
+			floor((bin1-${startPt})/${windowSize}) AS bin,
+			floor((bin2-${startPt})/${windowSize}) AS interactionPair,
+			dist_foldchange AS count
+		FROM ${tableName}
+		WHERE chr=#{chrom}
+		AND bin1 BETWEEN ${startPt} AND ${endPt}
+		AND bin2 BETWEEN ${startPt} AND ${endPt}
+		)a group by bin, interactionPair
+	</select> 
+	
+	
+	<select id="getHeatMapDataLast" parameterType="java.util.Map" resultMap="HeatMapVoMap">
+		SELECT 
+			chr
+			, FLOOR( (bin1 - ${startPt})/1000 ) AS bin
+			, FLOOR( (bin2 - ${startPt})/1000 ) AS interactionPair
+			, all_capture_res AS count
+		FROM ${tableName}
+		WHERE chr=#{chrom}
+		AND bin1 BETWEEN ${startPt} AND ${endPt}
+		
+		UNION ALL
+			
+		SELECT 
+			chr
+			, FLOOR( (bin2 - ${startPt})/1000 ) AS bin
+			, FLOOR( (bin1 - ${startPt})/1000 ) AS interactionPair
+			, all_capture_res AS count
+		FROM ${tableName}
+		WHERE chr=#{chrom}
+		AND bin2 BETWEEN ${startPt} AND ${endPt}
+		AND bin1 != bin2
+	</select> 
+	
+	
+	<select id="getAllToAllInteractionPairs" parameterType="java.util.Map" resultMap="InteractionVoMap">
+	SELECT
+		chr
+		, bin1
+		, bin2
+		, count
+		, foldChange
+		, bin1_idx
+		, bin2_idx
+	FROM (
+		SELECT 
+			chr
+			, bin1
+			, bin2
+			, all_capture_res AS count
+			, dist_foldchange AS foldChange
+			, FLOOR( (bin1 - ${startPt})/1000 ) AS bin1_idx
+			, FLOOR( (bin2 - ${startPt})/1000 ) AS bin2_idx 
+		<!-- FROM ${tableName} a use index(fst_idx), ( -->
+		FROM ${tableName} a, (
+			SELECT @rownum1:=@rownum1+1000 AS bin FROM AutocompleteTable a, (SELECT @rownum1:=${startPt}-1000) b LIMIT ${diff}
+		) b
+		WHERE a.chr=#{chrom} AND a.bin1=b.bin
+
+		UNION ALL
+
+		SELECT 
+			chr
+			, bin2 AS bin1
+			, bin1 AS bin2
+			, all_capture_res AS count
+			, dist_foldchange AS foldChange
+			, FLOOR( (bin2 - ${startPt})/1000 ) AS bin1_idx
+			, FLOOR( (bin1 - ${startPt})/1000 ) AS bin2_idx 
+		<!-- FROM ${tableName} a use index(snd_idx), ( -->
+		FROM ${tableName} a, (
+			SELECT @rownum:=@rownum+1000 AS bin FROM AutocompleteTable a, (SELECT @rownum:=${startPt}-1000) b LIMIT ${diff}
+		) b
+		WHERE a.chr=#{chrom} AND a.bin2=b.bin AND a.bin1 != a.bin2
+	) a
+	WHERE bin1 BETWEEN ${startPt} AND ${endPt}
+	AND bin2 BETWEEN ${startPt} AND ${endPt}
+	
+<!-- 		SELECT 
+			chr
+			, bin1
+			, bin2
+			, count
+			, foldChange
+			, bin1_idx
+			, bin2_idx
+		FROM (
+			SELECT 
+				chr
+				, bin1
+				, bin2
+				, all_capture_res AS count
+				, dist_foldchange AS foldChange
+				, FLOOR( (bin1 - ${startPt})/1000 ) AS bin1_idx
+				, FLOOR( (bin2 - ${startPt})/1000 ) AS bin2_idx
+			FROM ${tableName}
+			WHERE chr=#{chrom}
+			AND bin1 BETWEEN ${startPt} AND ${endPt}
+
+			UNION ALL
+
+			SELECT 
+				chr
+				, bin2 AS bin1
+				, bin1 AS bin2
+				, all_capture_res AS count
+				, dist_foldchange AS foldChange
+				, FLOOR( (bin2- ${startPt})/1000 ) AS bin1_idx
+				, FLOOR( (bin1 - ${startPt})/1000 ) AS bin2_idx
+			FROM ${tableName}
+			WHERE chr=#{chrom}
+			AND bin2 BETWEEN ${startPt} AND ${endPt}
+			AND bin1 != bin2
+		) a
+		WHERE bin1 BETWEEN ${startPt} AND ${endPt}
+		AND bin2 BETWEEN ${startPt} AND ${endPt} -->
+	</select>
+	
+		<select id="getAllToAllInteractionPairsGraph" parameterType="java.util.Map" resultMap="InteractionVoMap">
+<!-- 			SELECT 
+				chr
+				, bin1
+				, bin2
+				, all_capture_res AS count
+				, dist_foldchange AS foldChange
+				, FLOOR( (bin1 - ${baitStart})/1000 ) AS bin1_idx
+				, FLOOR( (bin2 - ${startPt})/1000 ) AS bin2_idx
+			FROM ${tableName}
+			WHERE chr=#{chrom}
+			AND bin1 BETWEEN ${baitStart} AND ${baitEnd}
+			AND bin2 BETWEEN ${startPt} AND ${endPt}
+
+			UNION ALL
+
+			SELECT 
+				chr
+				, bin2 AS bin1
+				, bin1 AS bin2
+				, all_capture_res AS count
+				, dist_foldchange AS foldChange
+				, FLOOR( (bin2- ${baitStart})/1000 ) AS bin1_idx
+				, FLOOR( (bin1 - ${startPt})/1000 ) AS bin2_idx
+			FROM ${tableName}
+			WHERE chr=#{chrom}
+			AND bin2 BETWEEN ${baitStart} AND ${baitEnd}
+			AND bin1 BETWEEN ${startPt} AND ${endPt}
+			AND bin1 != bin2 -->
+
+			SELECT 
+				chr , bin1 , bin2 , all_capture_res AS count , dist_foldchange AS foldChange , FLOOR( (bin1 - ${baitStart})/1000 ) AS bin1_idx , FLOOR( (bin2 - ${startPt})/1000 ) AS bin2_idx 
+			FROM ${tableName} a, (
+				SELECT @rownum1:=@rownum1+1000 AS bin FROM AutocompleteTable a, (SELECT @rownum1:=${baitStart}-1000) b LIMIT ${diffBait}
+			) b, 
+			(
+				SELECT @rownum:=@rownum+1000 AS bin FROM AutocompleteTable a, (SELECT @rownum:=${startPt}-1000) b LIMIT ${diff}
+			) c
+			WHERE a.chr=#{chrom} AND a.bin1=b.bin and a.bin2=c.bin
+			
+			UNION ALL
+			
+			SELECT 
+				chr , bin2 AS bin1, bin1 AS bin2, all_capture_res AS count , dist_foldchange AS foldChange , FLOOR( (bin2 - ${baitStart})/1000 ) AS bin1_idx , FLOOR( (bin1 - ${startPt})/1000 ) AS bin2_idx 
+			FROM ${tableName} a, (
+				SELECT @rownum2:=@rownum2+1000 AS bin FROM AutocompleteTable a, (SELECT @rownum2:=${baitStart}-1000) b LIMIT ${diffBait}
+			) b, 
+			(
+				SELECT @rownum3:=@rownum3+1000 AS bin FROM AutocompleteTable a, (SELECT @rownum3:=${startPt}-1000) b LIMIT ${diff}
+			) c
+			WHERE a.chr=#{chrom} AND a.bin1=c.bin and a.bin2=b.bin
+	</select>
+
+	<select id="getSampleList" resultMap="SampleVoMap">
+		SELECT 
+			@rownum:=@rownum+1 as num
+			, id, CONCAT(celline_name, ', ', enzyme, '-', geo_accession) AS celline_name, table_name, valid_yn 
+		FROM CellineInfo a, (SELECT (@rownum:=0)=0) b
+		WHERE valid_yn='Y'
+		ORDER BY id
+	</select>
+	
+	<select id="getTableName" parameterType="java.util.Map" resultType="java.lang.String">
+		SELECT table_name FROM CellineInfo WHERE id=${id}
+	</select>
+	
+	<select id="getAutoCompleteGeneSymbol" parameterType="java.util.Map" resultType="java.lang.String">
+		SELECT name2 FROM GENE_Refseq_hg19
+		WHERE name2 LIKE CONCAT('%', #{symbol}, '%')
+		GROUP BY name2
+		
+		UNION ALL
+
+		<if test="symbol != null and 6 >= length">
+		SELECT name AS name2 FROM (
+			SELECT name FROM AutocompleteSnpTable1
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable2
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable3
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable4
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable5
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable6
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable7
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable8
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable9
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable10
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable11
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable12
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable13
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable14
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable15
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable16
+			WHERE MATCH(name) AGAINST('${symbol}' IN BOOLEAN MODE)
+		) a
+		</if>
+
+		<if test="symbol != null and length > 6">
+		SELECT name AS name2 FROM (
+			SELECT name FROM AutocompleteSnpTable1
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable2
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable3
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable4
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable5
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable6
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable7
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable8
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable9
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable10
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable11
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable12
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable13
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable14
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable15
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+			UNION ALL
+			SELECT name FROM AutocompleteSnpTable16
+			WHERE MATCH(name) AGAINST('${symbol}*' IN BOOLEAN MODE)
+		) a
+		ORDER BY LENGTH(name2), name2
+		LIMIT 50
+		</if>
+	</select>
+</mapper>

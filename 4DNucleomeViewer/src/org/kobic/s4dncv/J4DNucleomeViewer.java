@@ -6,11 +6,17 @@ import java.net.MalformedURLException;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import org.kobic.s4dncv.com.Utils;
 import org.kobic.s4dncv.swing.J4DNucleomeViewerSplashScreen;
 import org.kobic.s4dncv.swing.MainFrame;
+
+import com.apple.eawt.Application;
+import com.apple.eawt.ApplicationAdapter;
+import com.apple.eawt.ApplicationEvent;
 
 public class J4DNucleomeViewer {
 	public J4DNucleomeViewer() {
@@ -19,9 +25,34 @@ public class J4DNucleomeViewer {
 
 	private void initLookAndFeel() {
 		try {
-			System.setProperty("apple.laf.useScreenMenuBar", "true");
-			System.setProperty("com.apple.mrj.application.apple.menu.about.name", "4DNucleomeViewer");
 		    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+
+		    if( Utils.isOSX() ) {
+				System.setProperty("apple.laf.useScreenMenuBar", "true");
+				System.setProperty("com.apple.mrj.application.apple.menu.about.name", "4DNucleomeViewer");
+
+				Application macApplication = Application.getApplication();
+				macApplication.addApplicationListener( new ApplicationAdapter() {
+					@Override
+					public void handleQuit(ApplicationEvent e) {
+						System.exit(0);
+					}
+					@Override
+					public void handleAbout(ApplicationEvent e) {
+						// tell the system we're handling this, so it won't display
+						// the default system "about" dialog after ours is shown.
+						e.setHandled(true);
+						JOptionPane.showMessageDialog(null, "Show About dialog here");
+					}
+					@Override
+					public void handlePreferences(ApplicationEvent e) {
+						JOptionPane.showMessageDialog(null, "Show Preferences dialog here");
+					}
+				});
+
+			    // need to enable the preferences option manually
+			    macApplication.setEnabledPreferencesMenu(true);
+		    }
 		}
 		catch(ClassNotFoundException e) {
 		    System.out.println("ClassNotFoundException: " + e.getMessage());
