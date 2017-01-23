@@ -2,6 +2,7 @@ package org.kobic.s4dncv;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.io.IOException;
 import java.net.MalformedURLException;
 
 import javax.swing.ImageIcon;
@@ -11,6 +12,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.kobic.s4dncv.com.Utils;
+import org.kobic.s4dncv.engine.model.J4DNucleomeViewerEngine;
 import org.kobic.s4dncv.swing.J4DNucleomeViewerSplashScreen;
 import org.kobic.s4dncv.swing.MainFrame;
 
@@ -76,7 +78,7 @@ public class J4DNucleomeViewer {
 		screen.setLocationRelativeTo(null);
 		screen.setProgressMax(100);
 		screen.setScreenVisible(true);
-		
+
 		for (int i = 0; i <= 100; i++) {
 			try {
 				Thread.sleep(10);
@@ -93,7 +95,15 @@ public class J4DNucleomeViewer {
 		    public void run() {
 				// TODO Auto-generated method stub
 				MainFrame frame = new MainFrame("4D Nucleome Viewer Ver. 0.1a");
-				
+
+				J4DNucleomeViewerEngine engine = new J4DNucleomeViewerEngine();
+				try {
+					engine.init();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 				double width = screenSize.getWidth();
 				double height = screenSize.getHeight();

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.kobic.genome.project.mapper.ProjectMapper">
-	<resultMap id="HiCInteractionPairCommonVoMap" type="org.kobic.genome.project.vo.HiCInteractionPairCommonVo">
+	<resultMap id="HiCInteractionPairCommonVoMap" type="org.kobic.s4dncv.engine.database.vo.HiCInteractionPairCommonVo">
 		<result property="startPt" column="startPt" />
 		<result property="endPt" column="endPt" />
 		<result property="maxFreq" column="maxFreq" />
@@ -10,7 +10,7 @@
 		<result property="windowSize" column="windowSize" />
 	</resultMap>
 	
-	<resultMap id="HiCInteractionPairVoMap" type="org.kobic.genome.project.vo.HiCInteractionPairVo">
+	<resultMap id="HiCInteractionPairVoMap" type="org.kobic.s4dncv.engine.database.vo.HiCInteractionPairVo">
 		<result property="bin" column="bin" />
 		<result property="interactionPair" column="interactionPair" />
 		<result property="count" column="count" />
@@ -18,19 +18,19 @@
 		<result property="rowOrder" column="rowOrder" />
 	</resultMap>
 	
-	<resultMap id="HeatMapVoMap" type="org.kobic.genome.project.vo.HeatMapVo">
+	<resultMap id="HeatMapVoMap" type="org.kobic.s4dncv.engine.database.vo.HeatMapVo">
 		<result property="bin" column="bin" />
 		<result property="interactionPair" column="interactionPair" />
 		<result property="count" column="count" />
 	</resultMap>
 
-	<resultMap id="LocusVoMap" type="org.kobic.genome.project.vo.LocusVo">
+	<resultMap id="LocusVoMap" type="org.kobic.s4dncv.engine.database.vo.LocusVo">
 		<result property="chrom" column="chrom" />
 		<result property="txStart" column="txStart" />
 		<result property="txEnd" column="txEnd" />
 	</resultMap>
 
-	<resultMap id="InteractionVoMap" type="org.kobic.genome.project.vo.InteractionVo">
+	<resultMap id="InteractionVoMap" type="org.kobic.s4dncv.engine.database.vo.InteractionVo">
 		<result property="chr" column="chr" />
 		<result property="bin1" column="bin1" />
 		<result property="bin2" column="bin2" />
@@ -41,7 +41,7 @@
 		<!-- <result property="all_capture_res" column="all_capture_res" /> -->
 	</resultMap>
 	
-	<resultMap id="GeneVoMap" type="org.kobic.genome.project.vo.GeneVo">
+	<resultMap id="GeneVoMap" type="org.kobic.s4dncv.engine.database.vo.GeneVo">
 		<result property="num" column="num" />
 		<result property="name" column="name" />
 		<result property="nameLength" column="nameLength" />
@@ -51,7 +51,7 @@
 		<result property="tableNM" column="tableNM" />
 	</resultMap>
 
-	<resultMap id="SampleVoMap" type="org.kobic.genome.project.vo.SampleVo">
+	<resultMap id="SampleVoMap" type="org.kobic.s4dncv.engine.database.vo.SampleVo">
 		<result property="num" column="num" />
 		<result property="id" column="num" />
 		<result property="celline_name" column="name" />
