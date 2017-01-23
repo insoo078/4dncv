@@ -26,9 +26,12 @@ public class J4DNucleomeViewerSplashScreen extends JWindow {
 		this.imageLabel = new JLabel();
 		this.southPanelFlowLayout = new FlowLayout();
 		this.progressBar = new JProgressBar();
+		this.southPanel = new JPanel();
 	}
 
 	public J4DNucleomeViewerSplashScreen(ImageIcon imageIcon) {
+		this();
+
 		this.imageIcon = imageIcon;
 		try {	
 			this.jbInit();
@@ -38,14 +41,14 @@ public class J4DNucleomeViewerSplashScreen extends JWindow {
 	}
 
 	// note - this class created with JBuilder
-	void jbInit() throws Exception {
+	private void jbInit() throws Exception {
 		this.imageLabel.setIcon(this.imageIcon);
 		this.getContentPane().setLayout(this.borderLayout1);
 		this.southPanel.setLayout(this.southPanelFlowLayout);
 		this.southPanel.setBackground(Color.BLACK);
 		this.getContentPane().add(this.imageLabel, BorderLayout.CENTER);
 		this.getContentPane().add(this.southPanel, BorderLayout.SOUTH);
-		southPanel.add(this.progressBar, null);
+		this.southPanel.add(this.progressBar, null);
 		this.pack();
 	}
 

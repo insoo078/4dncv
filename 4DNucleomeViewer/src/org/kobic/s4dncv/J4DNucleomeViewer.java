@@ -20,7 +20,7 @@ import com.apple.eawt.Application;
 import com.apple.eawt.ApplicationAdapter;
 import com.apple.eawt.ApplicationEvent;
 
-public class J4DNucleomeViewer {
+public class J4DNucleomeViewer{
 	public J4DNucleomeViewer() {
 		this.initLookAndFeel();
 	}
@@ -78,7 +78,9 @@ public class J4DNucleomeViewer {
 	private void backgroundWorkBySplash() {
 		J4DNucleomeViewerSplashScreen screen; 
 
-		ImageIcon myImage = new ImageIcon();
+		java.net.URL imgURL = this.getClass().getResource("resources/images/splash.gif");
+		ImageIcon myImage = new ImageIcon( imgURL );
+
 		screen = new J4DNucleomeViewerSplashScreen(myImage);
 		screen.setLocationRelativeTo(null);
 		screen.setProgressMax(100);
