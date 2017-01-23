@@ -75,7 +75,7 @@ public class J4DNucleomeViewer {
 		}		
 	}
 
-	public void launchJ4DNucleomViewer() {
+	private void backgroundWorkBySplash() {
 		J4DNucleomeViewerSplashScreen screen; 
 
 		ImageIcon myImage = new ImageIcon();
@@ -95,6 +95,10 @@ public class J4DNucleomeViewer {
 			screen.setProgress("Yo " + i, i);  // progress bar with a message
 			//screen.setProgress(i);           // progress bar with no message
 		}
+	    screen.setScreenVisible(false);
+	}
+	public void launchJ4DNucleomViewer() {
+		this.backgroundWorkBySplash();
 
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
 		    public void run() {
@@ -139,25 +143,11 @@ public class J4DNucleomeViewer {
 				frame.setVisible(true);
 		    }
 		});
-
-	    screen.setScreenVisible(false);
 	}
 
 	public static void main(String[] args) throws MalformedURLException {
 		J4DNucleomeViewer viewer = new J4DNucleomeViewer();
-		
-		viewer.launchJ4DNucleomViewer();
 
-//		final SplashScreen splash = SplashScreen.getSplashScreen();
-//        if (splash == null) {
-//            System.out.println("SplashScreen.getSplashScreen() returned null");
-//            return;
-//        }
-//
-//        Graphics2D g = splash.createGraphics();
-//        if (g == null) {
-//            System.out.println("g is null");
-//            return;
-//        }
+		viewer.launchJ4DNucleomViewer();
 	}
 }
