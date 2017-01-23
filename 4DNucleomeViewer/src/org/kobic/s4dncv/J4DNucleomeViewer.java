@@ -37,7 +37,12 @@ public class J4DNucleomeViewer {
 				macApplication.addApplicationListener( new ApplicationAdapter() {
 					@Override
 					public void handleQuit(ApplicationEvent e) {
-						System.exit(0);
+						if (JOptionPane.showConfirmDialog(new JFrame(), 
+				            "Are you sure to close this window?", "Really Closing?", 
+				            JOptionPane.YES_NO_OPTION,
+				            JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION){
+				            System.exit(0);
+				        }
 					}
 					@Override
 					public void handleAbout(ApplicationEvent e) {
@@ -90,11 +95,11 @@ public class J4DNucleomeViewer {
 			screen.setProgress("Yo " + i, i);  // progress bar with a message
 			//screen.setProgress(i);           // progress bar with no message
 		}
-	    
+
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
 		    public void run() {
 				// TODO Auto-generated method stub
-				MainFrame frame = new MainFrame("4D Nucleome Viewer Ver. 0.1a");
+				final MainFrame frame = new MainFrame("4D Nucleome Viewer Ver. 0.1a");
 
 				J4DNucleomeViewerEngine engine = new J4DNucleomeViewerEngine();
 				try {
@@ -103,6 +108,8 @@ public class J4DNucleomeViewer {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
+				engine.close();
 
 				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 				double width = screenSize.getWidth();
@@ -115,7 +122,19 @@ public class J4DNucleomeViewer {
 				
 				frame.setLocation( aa, bb );
 				
-				frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+				frame.addWindowListener(new java.awt.event.WindowAdapter() {
+				    @Override
+				    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+				        if (JOptionPane.showConfirmDialog(frame, 
+				            "Are you sure to close this window?", "Really Closing?", 
+				            JOptionPane.YES_NO_OPTION,
+				            JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION){
+				            System.exit(0);
+				        }
+				    }
+				});
+				
+//				frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
 				frame.setVisible(true);
 		    }
