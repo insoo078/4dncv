@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -76,27 +77,38 @@ public class J4DNucleomeViewer{
 	}
 
 	private void backgroundWorkBySplash() {
-		J4DNucleomeViewerSplashScreen screen; 
-
 		java.net.URL imgURL = this.getClass().getResource("resources/images/splash.gif");
 		ImageIcon myImage = new ImageIcon( imgURL );
 
-		screen = new J4DNucleomeViewerSplashScreen(myImage);
+		final J4DNucleomeViewerSplashScreen screen = new J4DNucleomeViewerSplashScreen(myImage);
 		screen.setLocationRelativeTo(null);
 		screen.setProgressMax(100);
 		screen.setScreenVisible(true);
 
-		for (int i = 0; i <= 100; i++) {
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			// run either of these two -- not both
-			screen.setProgress("Yo " + i, i);  // progress bar with a message
-			//screen.setProgress(i);           // progress bar with no message
+		J4DNucleomeViewerEngine engine = new J4DNucleomeViewerEngine();
+		try {
+			engine.init();
+			screen.setProgress("Database connection " + 10, 10);
+			Thread.sleep(3000);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+
+//		for (int i = 0; i <= 100; i++) {
+//			try {
+//				Thread.sleep(10);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			// run either of these two -- not both
+//			screen.setProgress("Yo " + i, i);  // progress bar with a message
+//			//screen.setProgress(i);           // progress bar with no message
+//		}
 	    screen.setScreenVisible(false);
 	}
 
@@ -140,7 +152,7 @@ public class J4DNucleomeViewer{
 				        }
 				    }
 				});
-				
+
 //				frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
 				frame.setVisible(true);
