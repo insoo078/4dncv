@@ -97,6 +97,7 @@ public class J4DNucleomeViewer {
 		}
 	    screen.setScreenVisible(false);
 	}
+
 	public void launchJ4DNucleomViewer() {
 		this.backgroundWorkBySplash();
 
